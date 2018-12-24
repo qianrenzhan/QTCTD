@@ -3,6 +3,9 @@
 #include <QFileDialog>
 #include <QDebug>
 #include <QMessageBox>
+#include <QTime>
+#include <QUuid>
+
 #include "templateprepare.h"
 
 TemplatePrepare gcapp;
@@ -14,15 +17,21 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     winName = "image";
 
-    scale = 0.5;
+    scale = 1;
     m_IsTemplateReady = false;
-
+#if defined (Q_OS_WIN32)
     m_Picture = imread("D:/temp/31.jpg", 1);
+#endif
+#if defined (Q_OS_LINUX)
+    m_Picture = imread("/home/qian/workspace/pic/1/1.jpg", 1);
+    m_Picture = imread("1.bmp", 1);
+#endif
     Mat show = m_Picture.clone();
     QImage image = MatToQImage(show);
     ui->label_picture->setPixmap(QPixmap::fromImage(image.scaled(ui->label_picture->size())));
 
-    connect(&gcapp,SIGNAL(template_ready(int, int, int, int)),this,SLOT(on_template_ready(int, int, int, int)));
+    //connect(&gcapp,SIGNAL(template_ready(int, int, int, int)),this,SLOT(on_template_ready(int, int, int, int)));
+    connect(&gcapp,SIGNAL(template_ready_new()),this,SLOT(on_template_ready_new()));
 }
 
 MainWindow::~MainWindow()
@@ -33,8 +42,6 @@ MainWindow::~MainWindow()
 void MainWindow::on_template_ready(int x,int y,int width,int height)
 {
     //读取1.txt和2.txt
-    Mat test = m_Picture;
-
     ifstream in;
     in.open("1.txt"); //打开文件
     index1 = 0;
@@ -76,6 +83,7 @@ void MainWindow::on_template_ready(int x,int y,int width,int height)
         Rect rect(x1,y1,width1,height1);
         vrect.append(rect);
     }
+    vrect.pop_back();
     in.close();//关闭文件
 
     //在右上绘制截取后的图
@@ -85,18 +93,91 @@ void MainWindow::on_template_ready(int x,int y,int width,int height)
     ui->label_area->setPixmap(QPixmap::fromImage(image.scaled(ui->label_area->size(),Qt::KeepAspectRatio)));
 
     //在roi上绘制轮廓，画到右下
-    cv::Size size(roi.size().width/2,roi.size().height/2);
+    cv::Size size(roi.size().width*scale,roi.size().height*scale);
     Mat roicontour = Mat::zeros(size, CV_8UC3);
     for (int controlnum = 0; controlnum < index2; controlnum++)
     {
         int x = object2[controlnum][0];
         int y = object2[controlnum][1];
-        circle(roicontour, Point(x, y), 4, Scalar(0, 0, 255), -1);
+        circle(roicontour, Point(x, y), 2, Scalar(0, 0, 255), -1);
     }
 
     for(int rectnum = 0; rectnum < vrect.size();rectnum++)
     {
-        rectangle(roicontour,vrect[rectnum],Scalar(0, 255, 0), -1);
+        rectangle(roicontour,vrect[rectnum],Scalar(0, 255, 0), 2);
+    }
+
+    image = MatToQImage(roicontour);
+    ui->label_contour->setPixmap(QPixmap::fromImage(image.scaled(ui->label_contour->size(),Qt::KeepAspectRatio)));
+}
+
+void MainWindow::on_template_ready_new()
+{
+    ifstream in;
+    in.open("1.txt"); //打开文件
+    index1 = 0;
+    while (!in.eof())
+    {
+        in >> object1[index1][0] >> object1[index1][1];
+        object1[index1++][2] = 0;
+    }
+    in.close();//关闭文件
+
+    index2 = 0;       //控制点的数量
+    int max = 0;
+    for (int i = 0; i < index1 - 1; i++)
+    {
+        if (object1[i][1] > max)
+            max = object1[i][1];
+    }
+    for (int i = 0; i < index1 - 1; i++)
+    {
+        if (object1[i][1] < max*0.95)
+        {
+            controldata1[index2][0] = object1[i][0];
+            controldata1[index2][1] = object1[i][1];
+            controldata1[index2][2] = object1[i][2];
+
+            object2[index2][0] = object1[i][0];
+            object2[index2][1] = object1[i][1];
+            object2[index2++][2] = object1[i][2];
+        }
+    }
+
+    //读取待检区域txt
+   in.open("2.txt");//打开文件
+   int x,y,width,height;
+   in >> x >> y >> width>> height;
+   vrect.clear();
+    while (!in.eof())
+    {
+        int x1,y1,width1,height1;
+        in >> x1 >> y1 >> width1>> height1;
+        Rect rect(x1,y1,width1,height1);
+        vrect.append(rect);
+    }
+    vrect.pop_back();
+    in.close();//关闭文件
+
+    //在右上绘制截取后的图
+    Rect rect(x/scale,y/scale,width/scale,height/scale);
+    Mat roi = m_Picture(rect);
+    QImage image = MatToQImage(roi);
+    ui->label_area->setPixmap(QPixmap::fromImage(image.scaled(ui->label_area->size(),Qt::KeepAspectRatio)));
+
+    //在roi上绘制轮廓，画到右下
+    cv::Size size(roi.size().width*scale,roi.size().height*scale);
+    Mat roicontour = Mat::zeros(size, CV_8UC3);
+    for (int controlnum = 0; controlnum < index2; controlnum++)
+    {
+        int x = object2[controlnum][0];
+        int y = object2[controlnum][1];
+        circle(roicontour, Point(x, y), 2, Scalar(0, 0, 255), -1);
+    }
+
+    for(int rectnum = 0; rectnum < vrect.size();rectnum++)
+    {
+        rectangle(roicontour,vrect[rectnum],Scalar(0, 255, 0), 2);
     }
 
     image = MatToQImage(roicontour);
@@ -213,12 +294,13 @@ void MainWindow::onMouse(int event, int x, int y, int flags, void *param)
 
 void MainWindow::on_btn_template_confirm_clicked()
 {
+    on_template_ready_new();
     m_IsTemplateReady = true;
 }
 
 void MainWindow::on_btn_detect_clicked()
 {
-
+    QString strshow;
     if(m_IsTemplateReady == false)
     {
         QMessageBox msgBox;
@@ -238,12 +320,13 @@ void MainWindow::on_btn_detect_clicked()
     cvtColor(bgr, hsv, CV_BGR2Lab);
 
     Vec3d low, high;
-    low[0] = -61;
-    low[1] = -8;
-    low[2] = -20;
-    high[0] = 138;
-    high[1] = 51;
-    high[2] = 39;
+
+    low[0] = -8;
+    low[1] = 35;
+    low[2] = 28;
+    high[0] = 91;
+    high[1] = 65;
+    high[2] = 58;
 
     Mat mask;
     inRange(hsv, Scalar(low[0], low[1], low[2]), Scalar(high[0], high[1], high[2]), mask);
@@ -270,16 +353,20 @@ void MainWindow::on_btn_detect_clicked()
 
     save.convertTo(gray_all, CV_8UC3, 255.0);
 
-    //        namedWindow("img");  //CV_WINDOW_NORMAL
-    //        imshow("img", gray_all);
+//    namedWindow("img");  //CV_WINDOW_NORMAL
+//    imshow("img", gray_all);
 
     cvtColor(gray_all, gray_all, CV_BGR2GRAY);
 
     GaussianBlur(gray_all, gray_all, Size(3, 3), 0);
     threshold(gray_all, gray_all, 100, 255, THRESH_BINARY);
-    Mat element = getStructuringElement(MORPH_RECT, Size(5, 5));
+    Mat element = getStructuringElement(MORPH_RECT, Size(3, 3));
     dilate(gray_all, gray_all, element);
     erode(gray_all, gray_all, element);
+
+//    namedWindow("img");  //CV_WINDOW_NORMAL
+//    imshow("img", gray_all);
+//    waitKey(1);
 
     vector<vector<cv::Point> > contours_all;
     vector<cv::Vec4i> hierarchy_all;
@@ -291,19 +378,19 @@ void MainWindow::on_btn_detect_clicked()
     int maxsize = 0;
     for (int i = 0; i < contours_all.size(); i++)
     {
-        //RotatedRect rotaterect1 = minAreaRect(contours_all[i]);
-        //float width1 = rotaterect1.size.width;
-        //float height1 = rotaterect1.size.height;
-        //float rectarea1 = width1 * height1;
-        //float realarea1 = contourArea(contours_all[i]);
-        //float index1 = realarea1 / rectarea1;
-
         if (contours_all[i].size() > maxsize)  // && index1 > 0.9
         {
             maxsize = contours_all[i].size();
             maxindex = i;
         }
     }
+
+//    Mat temp = Mat::zeros(gray_all.size(), CV_8UC3);
+//    drawContours(temp, contours_all, maxindex, CV_RGB(255, 0, 0), 1);
+
+//    namedWindow("img");  //CV_WINDOW_NORMAL
+//    imshow("img", temp);
+//    waitKey(1);
 
     index0 = 0;    //原始图片点数量
     for (int i = 0; i < contours_all[maxindex].size(); i+=2)
@@ -396,7 +483,7 @@ void MainWindow::on_btn_detect_clicked()
         E = sqrt(dissum);
         e_Intermediate[iter] = E / index2;
         float delta = abs(E - last_E) / index2;
-        if (delta < 0.0001)
+        if (delta < 0.001)
             break;
         last_E = E;
         //cout << "迭代了" << iter << "代" << endl;
@@ -404,7 +491,11 @@ void MainWindow::on_btn_detect_clicked()
     }
 
     //2.6 计算最终的R和T
-    cout << "计算最终的R和T" << endl;
+    cout << "计算最终的R和T:" << endl;
+    strshow = "计算最终的R和T:\n";
+    ui->textEdit->insertPlainText(strshow);
+    ui->textEdit->moveCursor(QTextCursor::End);
+
     float temp_T[2] = {0,0};
     for (int i = 0; i < iter; i++)
     {
@@ -413,6 +504,9 @@ void MainWindow::on_btn_detect_clicked()
     }
 
     cout << temp_T[0] << " " << temp_T[1] << endl;
+    strshow = QString::number(temp_T[0]) + " " + QString::number(temp_T[1]) + "\n";
+    ui->textEdit->insertPlainText(strshow);
+    ui->textEdit->moveCursor(QTextCursor::End);
 
     //2.7 得到匹配关系，把模板轮廓和检测区域根据R和T映射到原始图片，进行显示，主要是展示效果
     for (int controlnum = 0; controlnum < index2; controlnum++)
@@ -420,6 +514,19 @@ void MainWindow::on_btn_detect_clicked()
         int x = object2[controlnum][0] + temp_T[0];
         int y = object2[controlnum][1] + temp_T[1];
         circle(org, Point(x, y), 2, Scalar(0, 0, 255), -1);
+    }
+
+    for(int rectnum = 0; rectnum < vrect.size();rectnum++)
+    {
+        int x = vrect[rectnum].x + temp_T[0];
+        int y = vrect[rectnum].y + temp_T[1];
+        Rect rect(x,y,vrect[rectnum].width,vrect[rectnum].height);
+        rectangle(org,rect,Scalar(0, 255, 0), 2);
+
+        //save small area
+        Mat write = m_Picture(rect);
+        QString filename = QTime::currentTime().toString()+QUuid::createUuid().toString() + ".bmp";
+        imwrite(filename.toStdString(),write);
     }
 
     QImage image = MatToQImage(org);

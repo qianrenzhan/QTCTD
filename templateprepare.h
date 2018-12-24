@@ -4,9 +4,9 @@
 #include <QObject>
 #include<opencv2/opencv.hpp>
 
-#include <windows.h>
+//#include <windows.h>
 #include <iostream>
-#include <tchar.h>
+//#include <tchar.h>
 #include <fstream>
 #include <string>
 
@@ -40,6 +40,7 @@ public:
 signals:
 
     void template_ready(int x,int y,int width,int height);
+    void template_ready_new();
 
 private:
 
