@@ -25,90 +25,25 @@ MainWindow::MainWindow(QWidget *parent) :
 #if defined (Q_OS_LINUX)
     m_Picture = imread("/home/qian/workspace/pic/1/1.jpg", 1);
     m_Picture = imread("1.bmp", 1);
+    vstr.append("1.bmp");
+    vstr.append("3.bmp");
+    vstr.append("11.bmp");
+    vstr.append("12.bmp");
+    vstr.append("21.bmp");
+    current_file = 0;
 #endif
     Mat show = m_Picture.clone();
     QImage image = MatToQImage(show);
     ui->label_picture->setPixmap(QPixmap::fromImage(image.scaled(ui->label_picture->size())));
 
-    //connect(&gcapp,SIGNAL(template_ready(int, int, int, int)),this,SLOT(on_template_ready(int, int, int, int)));
     connect(&gcapp,SIGNAL(template_ready_new()),this,SLOT(on_template_ready_new()));
+
+    on_btn_template_confirm_clicked();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
-}
-
-void MainWindow::on_template_ready(int x,int y,int width,int height)
-{
-    //读取1.txt和2.txt
-    ifstream in;
-    in.open("1.txt"); //打开文件
-    index1 = 0;
-    while (!in.eof())
-    {
-        in >> object1[index1][0] >> object1[index1][1];
-        object1[index1++][2] = 0;
-    }
-    in.close();//关闭文件
-
-    index2 = 0;       //控制点的数量
-    int max = 0;
-    for (int i = 0; i < index1 - 1; i++)
-    {
-        if (object1[i][1] > max)
-            max = object1[i][1];
-    }
-    for (int i = 0; i < index1 - 1; i++)
-    {
-        if (object1[i][1] < max*0.95)
-        {
-            controldata1[index2][0] = object1[i][0];
-            controldata1[index2][1] = object1[i][1];
-            controldata1[index2][2] = object1[i][2];
-
-            object2[index2][0] = object1[i][0];
-            object2[index2][1] = object1[i][1];
-            object2[index2++][2] = object1[i][2];
-        }
-    }
-
-    //读取待检区域txt
-   in.open("2.txt");//打开文件
-   vrect.clear();
-    while (!in.eof())
-    {
-        int x1,y1,width1,height1;
-        in >> x1 >> y1 >> width1>> height1;
-        Rect rect(x1,y1,width1,height1);
-        vrect.append(rect);
-    }
-    vrect.pop_back();
-    in.close();//关闭文件
-
-    //在右上绘制截取后的图
-    Rect rect(x/scale,y/scale,width/scale,height/scale);
-    Mat roi = m_Picture(rect);
-    QImage image = MatToQImage(roi);
-    ui->label_area->setPixmap(QPixmap::fromImage(image.scaled(ui->label_area->size(),Qt::KeepAspectRatio)));
-
-    //在roi上绘制轮廓，画到右下
-    cv::Size size(roi.size().width*scale,roi.size().height*scale);
-    Mat roicontour = Mat::zeros(size, CV_8UC3);
-    for (int controlnum = 0; controlnum < index2; controlnum++)
-    {
-        int x = object2[controlnum][0];
-        int y = object2[controlnum][1];
-        circle(roicontour, Point(x, y), 2, Scalar(0, 0, 255), -1);
-    }
-
-    for(int rectnum = 0; rectnum < vrect.size();rectnum++)
-    {
-        rectangle(roicontour,vrect[rectnum],Scalar(0, 255, 0), 2);
-    }
-
-    image = MatToQImage(roicontour);
-    ui->label_contour->setPixmap(QPixmap::fromImage(image.scaled(ui->label_contour->size(),Qt::KeepAspectRatio)));
 }
 
 void MainWindow::on_template_ready_new()
@@ -504,16 +439,22 @@ void MainWindow::on_btn_detect_clicked()
     }
 
     cout << temp_T[0] << " " << temp_T[1] << endl;
+    temp_T[0] -=2;
+    temp_T[1] -=2;
     strshow = QString::number(temp_T[0]) + " " + QString::number(temp_T[1]) + "\n";
     ui->textEdit->insertPlainText(strshow);
     ui->textEdit->moveCursor(QTextCursor::End);
 
     //2.7 得到匹配关系，把模板轮廓和检测区域根据R和T映射到原始图片，进行显示，主要是展示效果
-    for (int controlnum = 0; controlnum < index2; controlnum++)
+    for (int controlnum = 0; controlnum < index2 - 1; controlnum++)
     {
-        int x = object2[controlnum][0] + temp_T[0];
-        int y = object2[controlnum][1] + temp_T[1];
-        circle(org, Point(x, y), 2, Scalar(0, 0, 255), -1);
+        int x1 = object2[controlnum][0] + temp_T[0];
+        int y1 = object2[controlnum][1] + temp_T[1];
+        int x2 = object2[controlnum+1][0] + temp_T[0];
+        int y2 = object2[controlnum+1][1] + temp_T[1];
+        circle(org, Point(x1, y1), 4, Scalar(255, 255, 255), -1);
+        if(x2-x1<5)
+            line(org,Point(x1,y1),Point(x2,y2),Scalar(0,0,0),2);
     }
 
     for(int rectnum = 0; rectnum < vrect.size();rectnum++)
@@ -521,15 +462,106 @@ void MainWindow::on_btn_detect_clicked()
         int x = vrect[rectnum].x + temp_T[0];
         int y = vrect[rectnum].y + temp_T[1];
         Rect rect(x,y,vrect[rectnum].width,vrect[rectnum].height);
-        rectangle(org,rect,Scalar(0, 255, 0), 2);
+        //rectangle(org,rect,Scalar(0, 255, 0), 2);
+        //Mat org = m_Picture(rect);
 
-        //save small area
-        Mat write = m_Picture(rect);
-        QString filename = QTime::currentTime().toString()+QUuid::createUuid().toString() + ".bmp";
-        imwrite(filename.toStdString(),write);
+        Mat bgr, hsv;
+        Mat temparea = m_Picture(rect);
+
+        float scale = 5;
+        Size dsize = Size(temparea.cols*scale, temparea.rows*scale);
+        Mat area = Mat(dsize, CV_32S);
+        cv::resize(temparea, area, dsize);
+
+        area.convertTo(bgr, CV_32FC3, 1.0 / 255, 0);
+        cvtColor(bgr, hsv, CV_BGR2Lab);
+
+        float LAB[500][3];
+        float sub[500][2];
+        float cross[500];
+
+        //遍历图像
+        for (int r = 0; r < hsv.rows; r++)
+        {
+            float l = 0, a = 0, b = 0;
+            for (int c = hsv.cols / 2 - 2; c < hsv.cols / 2 + 2; c++)
+            {
+                Vec3f vec3b = hsv.at<Vec3f>(r, c);
+                l += vec3b[0];
+                a += vec3b[1];
+                b += vec3b[2];
+            }
+            //fout << l << " " << a << " " << b << endl;
+            strshow = QString::number(l) + " " + QString::number(a) + " " + QString::number(b) + "\n";
+            ui->textEdit->insertPlainText(strshow);
+            ui->textEdit->moveCursor(QTextCursor::End);
+            LAB[r][0] = l;
+            LAB[r][1] = a;
+            LAB[r][2] = b;
+        }
+
+        //找到L通道的最小值
+        int mindata = 10000;
+        int minindex = 0;
+        for (int i = 0; i < hsv.rows; i++)
+        {
+            if (LAB[i][0] < mindata)
+            {
+                mindata = LAB[i][0];
+                minindex = i;
+            }
+        }
+
+
+        if (minindex > 275 && mindata < 150)    //如果有黑色的卡槽区域
+        {
+            rectangle(org,rect,Scalar(0, 255, 0), 2);    //GREEN
+            //cout << files[i].c_str() << ":1" << endl;
+        }
+        else
+        {
+            for (int i = 10; i < hsv.rows; i++)
+            {
+                sub[i][0] = LAB[i][1] - LAB[i-10][1];
+                sub[i][1] = LAB[i][2] - LAB[i - 10][2];
+                cross[i] = sub[i][0] * sub[i][1];
+            }
+
+            //找cross[1:100]中最大值
+            int maxdata = 0;
+            int maxindex = 0;
+            for (int i = 10; i < 100; i++)
+            {
+                if (cross[i] > maxdata)
+                {
+                    maxdata = cross[i];
+                    maxindex = i;
+                }
+            }
+            if(maxdata > 200)
+                rectangle(org,rect,Scalar(0, 255, 0), 2);   //GREEN
+            else
+                rectangle(org,rect,Scalar(0, 0, 255), 2);   //RED
+        }
+
+//        //save small area
+//        Mat write = m_Picture(rect);
+//        QString filename = QTime::currentTime().toString()+QUuid::createUuid().toString() + ".bmp";
+//        imwrite(filename.toStdString(),write);
     }
 
     QImage image = MatToQImage(org);
     ui->label_picture->setPixmap(QPixmap::fromImage(image.scaled(ui->label_picture->size())));
 
+}
+
+void MainWindow::on_btn_read_next_clicked()
+{
+    current_file = (++current_file)%(vstr.size());
+    QString fileName = vstr.at(current_file);
+
+    m_Picture = imread(fileName.toStdString(), 1);
+    Mat show = m_Picture.clone();
+    QImage image = MatToQImage(show);
+    ui->label_picture->setPixmap(QPixmap::fromImage(image.scaled(ui->label_picture->size())));
 }

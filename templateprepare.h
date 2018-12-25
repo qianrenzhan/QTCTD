@@ -38,8 +38,6 @@ public:
     void mouseClick(int event, int x, int y, int flags, void* param);
 
 signals:
-
-    void template_ready(int x,int y,int width,int height);
     void template_ready_new();
 
 private:

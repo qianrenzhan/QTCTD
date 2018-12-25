@@ -181,7 +181,7 @@ background-color: rgb(255, 255, 127);</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="2">
+     <item row="0" column="3">
       <widget class="QPushButton" name="btn_template_prepare">
        <property name="font">
         <font>
@@ -193,7 +193,7 @@ background-color: rgb(255, 255, 127);</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="3">
+     <item row="0" column="4">
       <widget class="QPushButton" name="btn_template_confirm">
        <property name="font">
         <font>
@@ -205,7 +205,7 @@ background-color: rgb(255, 255, 127);</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="4">
+     <item row="0" column="5">
       <widget class="QPushButton" name="btn_detect">
        <property name="font">
         <font>
@@ -214,6 +214,18 @@ background-color: rgb(255, 255, 127);</string>
        </property>
        <property name="text">
         <string>识别/检测</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QPushButton" name="btn_read_next">
+       <property name="font">
+        <font>
+         <pointsize>16</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>NEXT</string>
        </property>
       </widget>
      </item>

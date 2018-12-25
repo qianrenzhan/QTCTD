@@ -186,7 +186,6 @@ void TemplatePrepare::mouseClick(int event, int x, int y, int flags, void*)
 
         destroyWindow(*winName);
 
-        emit template_ready(rect.x,rect.y,rect.width,rect.height);
         emit template_ready_new();
     }
         break;

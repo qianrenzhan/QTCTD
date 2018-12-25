@@ -32,13 +32,14 @@ private slots:
 
     void on_btn_template_prepare_clicked();
 
-    void on_template_ready(int x,int y,int width,int height);
     void on_template_ready_new();
 
     void on_btn_template_confirm_clicked();
     
     void on_btn_detect_clicked();
     
+    void on_btn_read_next_clicked();
+
 private:
     Ui::MainWindow *ui;
 
@@ -66,6 +67,10 @@ private:
 
     //待检区域
     QList<Rect> vrect;
+
+    //filelist
+    QVector<QString> vstr;
+    int current_file;
 
 };
 
