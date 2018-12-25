@@ -3,6 +3,10 @@
 
 #include <QMainWindow>
 #include<opencv2/opencv.hpp>
+#include <fstream>
+#include <string>
+
+using namespace std;
 using namespace cv;
 
 namespace Ui {
@@ -19,7 +23,7 @@ public:
     Mat QImageToMat(QImage image);
     QImage MatToQImage(cv::Mat& mat);
 
-    static void MainWindow::onMouse(int event, int x, int y, int flags, void *param);
+    static void onMouse(int event, int x, int y, int flags, void *param);
 
 private slots:
     void on_btn_open_clicked();
@@ -28,12 +32,14 @@ private slots:
 
     void on_btn_template_prepare_clicked();
 
-    void on_template_ready(int x,int y,int width,int height);
+    void on_template_ready_new();
 
     void on_btn_template_confirm_clicked();
     
     void on_btn_detect_clicked();
     
+    void on_btn_read_next_clicked();
+
 private:
     Ui::MainWindow *ui;
 
@@ -61,6 +67,10 @@ private:
 
     //待检区域
     QList<Rect> vrect;
+
+    //filelist
+    QVector<QString> vstr;
+    int current_file;
 
 };
 

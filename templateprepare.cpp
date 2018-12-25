@@ -90,12 +90,12 @@ void TemplatePrepare::mouseClick(int event, int x, int y, int flags, void*)
         cvtColor(bgr, hsv, CV_BGR2Lab);
 
         Vec3d low, high;
-        low[0] = -61;
-        low[1] = -8;
-        low[2] = -20;
-        high[0] = 138;
-        high[1] = 51;
-        high[2] = 39;
+        low[0] = -8;
+        low[1] = 35;
+        low[2] = 28;
+        high[0] = 91;
+        high[1] = 65;
+        high[2] = 58;
 
         Mat mask;
         inRange(hsv, Scalar(low[0], low[1], low[2]), Scalar(high[0], high[1], high[2]), mask);
@@ -162,8 +162,8 @@ void TemplatePrepare::mouseClick(int event, int x, int y, int flags, void*)
         Mat temp = Mat::zeros(gray_all.size(), CV_8UC3);
         drawContours(temp, contours_all, maxindex, CV_RGB(255, 0, 0), 1); //rng.uniform(0,255)  ，CV_FILLED
 
-        namedWindow("temp");
-        imshow("temp", temp);
+//        namedWindow("temp");
+//        imshow("temp", temp);
 
         //保存轮廓到文件
         fout.open("1.txt");
@@ -174,6 +174,7 @@ void TemplatePrepare::mouseClick(int event, int x, int y, int flags, void*)
         fout.close();
 
         fout.open("2.txt");
+        fout << rect.x << " " << rect.y << " " << rect.width << " " << rect.height << endl;
         for(int i = 0;i<vrectobject.size();i++)
         {
             fout << vrectobject[i].x - rect.x << " ";
@@ -185,7 +186,7 @@ void TemplatePrepare::mouseClick(int event, int x, int y, int flags, void*)
 
         destroyWindow(*winName);
 
-        emit template_ready(rect.x,rect.y,rect.width,rect.height);
+        emit template_ready_new();
     }
         break;
 

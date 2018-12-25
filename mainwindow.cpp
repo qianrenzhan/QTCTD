@@ -3,6 +3,9 @@
 #include <QFileDialog>
 #include <QDebug>
 #include <QMessageBox>
+#include <QTime>
+#include <QUuid>
+
 #include "templateprepare.h"
 
 TemplatePrepare gcapp;
@@ -14,15 +17,28 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     winName = "image";
 
-    scale = 0.5;
+    scale = 1;
     m_IsTemplateReady = false;
-
+#if defined (Q_OS_WIN32)
     m_Picture = imread("D:/temp/31.jpg", 1);
+#endif
+#if defined (Q_OS_LINUX)
+    m_Picture = imread("/home/qian/workspace/pic/1/1.jpg", 1);
+    m_Picture = imread("1.bmp", 1);
+    vstr.append("1.bmp");
+    vstr.append("3.bmp");
+    vstr.append("11.bmp");
+    vstr.append("12.bmp");
+    vstr.append("21.bmp");
+    current_file = 0;
+#endif
     Mat show = m_Picture.clone();
     QImage image = MatToQImage(show);
     ui->label_picture->setPixmap(QPixmap::fromImage(image.scaled(ui->label_picture->size())));
 
-    connect(&gcapp,SIGNAL(template_ready(int, int, int, int)),this,SLOT(on_template_ready(int, int, int, int)));
+    connect(&gcapp,SIGNAL(template_ready_new()),this,SLOT(on_template_ready_new()));
+
+    on_btn_template_confirm_clicked();
 }
 
 MainWindow::~MainWindow()
@@ -30,11 +46,8 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_template_ready(int x,int y,int width,int height)
+void MainWindow::on_template_ready_new()
 {
-    //读取1.txt和2.txt
-    Mat test = m_Picture;
-
     ifstream in;
     in.open("1.txt"); //打开文件
     index1 = 0;
@@ -68,6 +81,8 @@ void MainWindow::on_template_ready(int x,int y,int width,int height)
 
     //读取待检区域txt
    in.open("2.txt");//打开文件
+   int x,y,width,height;
+   in >> x >> y >> width>> height;
    vrect.clear();
     while (!in.eof())
     {
@@ -76,6 +91,7 @@ void MainWindow::on_template_ready(int x,int y,int width,int height)
         Rect rect(x1,y1,width1,height1);
         vrect.append(rect);
     }
+    vrect.pop_back();
     in.close();//关闭文件
 
     //在右上绘制截取后的图
@@ -85,18 +101,18 @@ void MainWindow::on_template_ready(int x,int y,int width,int height)
     ui->label_area->setPixmap(QPixmap::fromImage(image.scaled(ui->label_area->size(),Qt::KeepAspectRatio)));
 
     //在roi上绘制轮廓，画到右下
-    cv::Size size(roi.size().width/2,roi.size().height/2);
+    cv::Size size(roi.size().width*scale,roi.size().height*scale);
     Mat roicontour = Mat::zeros(size, CV_8UC3);
     for (int controlnum = 0; controlnum < index2; controlnum++)
     {
         int x = object2[controlnum][0];
         int y = object2[controlnum][1];
-        circle(roicontour, Point(x, y), 4, Scalar(0, 0, 255), -1);
+        circle(roicontour, Point(x, y), 2, Scalar(0, 0, 255), -1);
     }
 
     for(int rectnum = 0; rectnum < vrect.size();rectnum++)
     {
-        rectangle(roicontour,vrect[rectnum],Scalar(0, 255, 0), -1);
+        rectangle(roicontour,vrect[rectnum],Scalar(0, 255, 0), 2);
     }
 
     image = MatToQImage(roicontour);
@@ -213,12 +229,13 @@ void MainWindow::onMouse(int event, int x, int y, int flags, void *param)
 
 void MainWindow::on_btn_template_confirm_clicked()
 {
+    on_template_ready_new();
     m_IsTemplateReady = true;
 }
 
 void MainWindow::on_btn_detect_clicked()
 {
-
+    QString strshow;
     if(m_IsTemplateReady == false)
     {
         QMessageBox msgBox;
@@ -238,12 +255,13 @@ void MainWindow::on_btn_detect_clicked()
     cvtColor(bgr, hsv, CV_BGR2Lab);
 
     Vec3d low, high;
-    low[0] = -61;
-    low[1] = -8;
-    low[2] = -20;
-    high[0] = 138;
-    high[1] = 51;
-    high[2] = 39;
+
+    low[0] = -8;
+    low[1] = 35;
+    low[2] = 28;
+    high[0] = 91;
+    high[1] = 65;
+    high[2] = 58;
 
     Mat mask;
     inRange(hsv, Scalar(low[0], low[1], low[2]), Scalar(high[0], high[1], high[2]), mask);
@@ -270,16 +288,20 @@ void MainWindow::on_btn_detect_clicked()
 
     save.convertTo(gray_all, CV_8UC3, 255.0);
 
-    //        namedWindow("img");  //CV_WINDOW_NORMAL
-    //        imshow("img", gray_all);
+//    namedWindow("img");  //CV_WINDOW_NORMAL
+//    imshow("img", gray_all);
 
     cvtColor(gray_all, gray_all, CV_BGR2GRAY);
 
     GaussianBlur(gray_all, gray_all, Size(3, 3), 0);
     threshold(gray_all, gray_all, 100, 255, THRESH_BINARY);
-    Mat element = getStructuringElement(MORPH_RECT, Size(5, 5));
+    Mat element = getStructuringElement(MORPH_RECT, Size(3, 3));
     dilate(gray_all, gray_all, element);
     erode(gray_all, gray_all, element);
+
+//    namedWindow("img");  //CV_WINDOW_NORMAL
+//    imshow("img", gray_all);
+//    waitKey(1);
 
     vector<vector<cv::Point> > contours_all;
     vector<cv::Vec4i> hierarchy_all;
@@ -291,19 +313,19 @@ void MainWindow::on_btn_detect_clicked()
     int maxsize = 0;
     for (int i = 0; i < contours_all.size(); i++)
     {
-        //RotatedRect rotaterect1 = minAreaRect(contours_all[i]);
-        //float width1 = rotaterect1.size.width;
-        //float height1 = rotaterect1.size.height;
-        //float rectarea1 = width1 * height1;
-        //float realarea1 = contourArea(contours_all[i]);
-        //float index1 = realarea1 / rectarea1;
-
         if (contours_all[i].size() > maxsize)  // && index1 > 0.9
         {
             maxsize = contours_all[i].size();
             maxindex = i;
         }
     }
+
+//    Mat temp = Mat::zeros(gray_all.size(), CV_8UC3);
+//    drawContours(temp, contours_all, maxindex, CV_RGB(255, 0, 0), 1);
+
+//    namedWindow("img");  //CV_WINDOW_NORMAL
+//    imshow("img", temp);
+//    waitKey(1);
 
     index0 = 0;    //原始图片点数量
     for (int i = 0; i < contours_all[maxindex].size(); i+=2)
@@ -396,7 +418,7 @@ void MainWindow::on_btn_detect_clicked()
         E = sqrt(dissum);
         e_Intermediate[iter] = E / index2;
         float delta = abs(E - last_E) / index2;
-        if (delta < 0.0001)
+        if (delta < 0.001)
             break;
         last_E = E;
         //cout << "迭代了" << iter << "代" << endl;
@@ -404,7 +426,11 @@ void MainWindow::on_btn_detect_clicked()
     }
 
     //2.6 计算最终的R和T
-    cout << "计算最终的R和T" << endl;
+    cout << "计算最终的R和T:" << endl;
+    strshow = "计算最终的R和T:\n";
+    ui->textEdit->insertPlainText(strshow);
+    ui->textEdit->moveCursor(QTextCursor::End);
+
     float temp_T[2] = {0,0};
     for (int i = 0; i < iter; i++)
     {
@@ -413,16 +439,129 @@ void MainWindow::on_btn_detect_clicked()
     }
 
     cout << temp_T[0] << " " << temp_T[1] << endl;
+    temp_T[0] -=2;
+    temp_T[1] -=2;
+    strshow = QString::number(temp_T[0]) + " " + QString::number(temp_T[1]) + "\n";
+    ui->textEdit->insertPlainText(strshow);
+    ui->textEdit->moveCursor(QTextCursor::End);
 
     //2.7 得到匹配关系，把模板轮廓和检测区域根据R和T映射到原始图片，进行显示，主要是展示效果
-    for (int controlnum = 0; controlnum < index2; controlnum++)
+    for (int controlnum = 0; controlnum < index2 - 1; controlnum++)
     {
-        int x = object2[controlnum][0] + temp_T[0];
-        int y = object2[controlnum][1] + temp_T[1];
-        circle(org, Point(x, y), 2, Scalar(0, 0, 255), -1);
+        int x1 = object2[controlnum][0] + temp_T[0];
+        int y1 = object2[controlnum][1] + temp_T[1];
+        int x2 = object2[controlnum+1][0] + temp_T[0];
+        int y2 = object2[controlnum+1][1] + temp_T[1];
+        circle(org, Point(x1, y1), 4, Scalar(255, 255, 255), -1);
+        if(x2-x1<5)
+            line(org,Point(x1,y1),Point(x2,y2),Scalar(0,0,0),2);
+    }
+
+    for(int rectnum = 0; rectnum < vrect.size();rectnum++)
+    {
+        int x = vrect[rectnum].x + temp_T[0];
+        int y = vrect[rectnum].y + temp_T[1];
+        Rect rect(x,y,vrect[rectnum].width,vrect[rectnum].height);
+        //rectangle(org,rect,Scalar(0, 255, 0), 2);
+        //Mat org = m_Picture(rect);
+
+        Mat bgr, hsv;
+        Mat temparea = m_Picture(rect);
+
+        float scale = 5;
+        Size dsize = Size(temparea.cols*scale, temparea.rows*scale);
+        Mat area = Mat(dsize, CV_32S);
+        cv::resize(temparea, area, dsize);
+
+        area.convertTo(bgr, CV_32FC3, 1.0 / 255, 0);
+        cvtColor(bgr, hsv, CV_BGR2Lab);
+
+        float LAB[500][3];
+        float sub[500][2];
+        float cross[500];
+
+        //遍历图像
+        for (int r = 0; r < hsv.rows; r++)
+        {
+            float l = 0, a = 0, b = 0;
+            for (int c = hsv.cols / 2 - 2; c < hsv.cols / 2 + 2; c++)
+            {
+                Vec3f vec3b = hsv.at<Vec3f>(r, c);
+                l += vec3b[0];
+                a += vec3b[1];
+                b += vec3b[2];
+            }
+            //fout << l << " " << a << " " << b << endl;
+            strshow = QString::number(l) + " " + QString::number(a) + " " + QString::number(b) + "\n";
+            ui->textEdit->insertPlainText(strshow);
+            ui->textEdit->moveCursor(QTextCursor::End);
+            LAB[r][0] = l;
+            LAB[r][1] = a;
+            LAB[r][2] = b;
+        }
+
+        //找到L通道的最小值
+        int mindata = 10000;
+        int minindex = 0;
+        for (int i = 0; i < hsv.rows; i++)
+        {
+            if (LAB[i][0] < mindata)
+            {
+                mindata = LAB[i][0];
+                minindex = i;
+            }
+        }
+
+
+        if (minindex > 275 && mindata < 150)    //如果有黑色的卡槽区域
+        {
+            rectangle(org,rect,Scalar(0, 255, 0), 2);    //GREEN
+            //cout << files[i].c_str() << ":1" << endl;
+        }
+        else
+        {
+            for (int i = 10; i < hsv.rows; i++)
+            {
+                sub[i][0] = LAB[i][1] - LAB[i-10][1];
+                sub[i][1] = LAB[i][2] - LAB[i - 10][2];
+                cross[i] = sub[i][0] * sub[i][1];
+            }
+
+            //找cross[1:100]中最大值
+            int maxdata = 0;
+            int maxindex = 0;
+            for (int i = 10; i < 100; i++)
+            {
+                if (cross[i] > maxdata)
+                {
+                    maxdata = cross[i];
+                    maxindex = i;
+                }
+            }
+            if(maxdata > 200)
+                rectangle(org,rect,Scalar(0, 255, 0), 2);   //GREEN
+            else
+                rectangle(org,rect,Scalar(0, 0, 255), 2);   //RED
+        }
+
+//        //save small area
+//        Mat write = m_Picture(rect);
+//        QString filename = QTime::currentTime().toString()+QUuid::createUuid().toString() + ".bmp";
+//        imwrite(filename.toStdString(),write);
     }
 
     QImage image = MatToQImage(org);
     ui->label_picture->setPixmap(QPixmap::fromImage(image.scaled(ui->label_picture->size())));
 
+}
+
+void MainWindow::on_btn_read_next_clicked()
+{
+    current_file = (++current_file)%(vstr.size());
+    QString fileName = vstr.at(current_file);
+
+    m_Picture = imread(fileName.toStdString(), 1);
+    Mat show = m_Picture.clone();
+    QImage image = MatToQImage(show);
+    ui->label_picture->setPixmap(QPixmap::fromImage(image.scaled(ui->label_picture->size())));
 }

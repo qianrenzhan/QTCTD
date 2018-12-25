@@ -4,9 +4,9 @@
 #include <QObject>
 #include<opencv2/opencv.hpp>
 
-#include <windows.h>
+//#include <windows.h>
 #include <iostream>
-#include <tchar.h>
+//#include <tchar.h>
 #include <fstream>
 #include <string>
 
@@ -38,8 +38,7 @@ public:
     void mouseClick(int event, int x, int y, int flags, void* param);
 
 signals:
-
-    void template_ready(int x,int y,int width,int height);
+    void template_ready_new();
 
 private:
 
