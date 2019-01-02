@@ -20,7 +20,14 @@ MainWindow::MainWindow(QWidget *parent) :
     scale = 1;
     m_IsTemplateReady = false;
 #if defined (Q_OS_WIN32)
-    m_Picture = imread("D:/temp/31.jpg", 1);
+    m_Picture = imread("D:\\temp\\QTCTD\\1.bmp", 1);
+    vstr.append("D:\\temp\\QTCTD\\1.bmp");
+    vstr.append("D:\\temp\\QTCTD\\3.bmp");
+    vstr.append("D:\\temp\\QTCTD\\11.bmp");
+    vstr.append("D:\\temp\\QTCTD\\21.bmp");
+    vstr.append("D:\\temp\\QTCTD\\31.bmp");
+    vstr.append("D:\\temp\\QTCTD\\34.bmp");
+    current_file = 0;
 #endif
 #if defined (Q_OS_LINUX)
     m_Picture = imread("1.bmp", 1);
@@ -446,10 +453,10 @@ void MainWindow::on_btn_detect_clicked()
     }
 
     //2.6 计算最终的R和T
-    cout << "计算最终的R和T:" << endl;
-    strshow = "计算最终的R和T:\n";
-    ui->textEdit->insertPlainText(strshow);
-    ui->textEdit->moveCursor(QTextCursor::End);
+//    cout << "计算最终的R和T:" << endl;
+//    strshow = "计算最终的R和T:\n";
+//    ui->textEdit->insertPlainText(strshow);
+//    ui->textEdit->moveCursor(QTextCursor::End);
 
     float temp_T[2] = {0,0};
     for (int i = 0; i < iter; i++)
@@ -458,12 +465,12 @@ void MainWindow::on_btn_detect_clicked()
         temp_T[1] += T_Intermediate[i][1];
     }
 
-    cout << temp_T[0] << " " << temp_T[1] << endl;
-    temp_T[0] -=2;
-    temp_T[1] -=2;
-    strshow = QString::number(temp_T[0]) + " " + QString::number(temp_T[1]) + "\n";
-    ui->textEdit->insertPlainText(strshow);
-    ui->textEdit->moveCursor(QTextCursor::End);
+//    cout << temp_T[0] << " " << temp_T[1] << endl;
+//    temp_T[0] -=2;
+//    temp_T[1] -=2;
+//    strshow = QString::number(temp_T[0]) + " " + QString::number(temp_T[1]) + "\n";
+//    ui->textEdit->insertPlainText(strshow);
+//    ui->textEdit->moveCursor(QTextCursor::End);
 
     //2.7 得到匹配关系，把模板轮廓和检测区域根据R和T映射到原始图片，进行显示，主要是展示效果
     for (int controlnum = 0; controlnum < index2 - 1; controlnum++)
@@ -515,7 +522,7 @@ void MainWindow::on_btn_detect_clicked()
 //            strshow = QString::number(l) + " " + QString::number(a) + " " + QString::number(b) + "\n";
 //            ui->textEdit->insertPlainText(strshow);
 //            ui->textEdit->moveCursor(QTextCursor::End);
-            //zhe duan daima daozhi benkui
+
             LAB[r][0] = l;
             LAB[r][1] = a;
             LAB[r][2] = b;

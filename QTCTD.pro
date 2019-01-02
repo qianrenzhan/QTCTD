@@ -41,10 +41,18 @@ message("compile for windows")
 QMAKE_CXXFLAGS += /MP
 
 # opencv
-INCLUDEPATH+= D:\OpenCV\opencv\build\include  \
-            D:\OpenCV\opencv\build\include\opencv    \
-            D:\OpenCV\opencv\build\include\opencv2
-LIBS  +=  D:\OpenCV\vs2017-64build\install\lib\opencv_*2410d.lib
+INCLUDEPATH+= D:\OpenCV\vs2015-64build-opencv3.3\install\include
+
+CONFIG(debug, debug|release) {
+message("debug")
+#LIBS  +=  D:\OpenCV\vs2017-64build\install\lib\opencv_*2410d.lib
+LIBS += D:\OpenCV\vs2015-64build-opencv3.3\install\x64\vc14\lib\opencv_*330d.lib
+} else {
+message("release")
+#LIBS  +=  D:\OpenCV\vs2017-64build\install\lib\opencv_*2410.lib
+D:\OpenCV\vs2015-64build-opencv3.3\install\x64\vc14\lib\opencv_*330.lib
+}
+
 
 
 #DAHENG
