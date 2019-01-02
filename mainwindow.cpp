@@ -275,6 +275,7 @@ void MainWindow::on_btn_detect_clicked()
     high[1] = 65;
     high[2] = 58;
 
+    //2,3
 //    low[0] = -8;
 //    low[1] = 6;
 //    low[2] = -2;
