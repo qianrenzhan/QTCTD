@@ -59,9 +59,9 @@ private:
     int index0 = 0;              //原始图片点数量
 
     //模板
-    int object1[100][3];         //原始模板
-    int object2[100][3];		//去掉高度的模板
-    int controldata1[100][3];   //控制点，每次迭代
+    int object1[1000][3];         //原始模板
+    int object2[1000][3];		//去掉高度的模板
+    int controldata1[1000][3];   //控制点，每次迭代
     int index1;
     int index2;                 //控制点的数量
 

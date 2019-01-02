@@ -23,13 +23,18 @@ MainWindow::MainWindow(QWidget *parent) :
     m_Picture = imread("D:/temp/31.jpg", 1);
 #endif
 #if defined (Q_OS_LINUX)
-    m_Picture = imread("/home/qian/workspace/pic/1/1.jpg", 1);
     m_Picture = imread("1.bmp", 1);
     vstr.append("1.bmp");
     vstr.append("3.bmp");
     vstr.append("11.bmp");
     vstr.append("12.bmp");
     vstr.append("21.bmp");
+//    m_Picture = imread("1.jpg", 1);
+//    vstr.append("1.jpg");
+//    vstr.append("2.jpg");
+//    vstr.append("3.jpg");
+//    vstr.append("4.jpg");
+//    vstr.append("5.jpg");
     current_file = 0;
 #endif
     Mat show = m_Picture.clone();
@@ -38,7 +43,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(&gcapp,SIGNAL(template_ready_new()),this,SLOT(on_template_ready_new()));
 
-    on_btn_template_confirm_clicked();
+    //on_btn_template_confirm_clicked();
 }
 
 MainWindow::~MainWindow()
@@ -255,13 +260,28 @@ void MainWindow::on_btn_detect_clicked()
     cvtColor(bgr, hsv, CV_BGR2Lab);
 
     Vec3d low, high;
-
+    //1
     low[0] = -8;
     low[1] = 35;
     low[2] = 28;
     high[0] = 91;
     high[1] = 65;
     high[2] = 58;
+
+//    low[0] = -8;
+//    low[1] = 6;
+//    low[2] = -2;
+//    high[0] = 91;
+//    high[1] = 36;
+//    high[2] = 27;
+
+    //4
+//    low[0] = -8;
+//    low[1] = 26;
+//    low[2] = 2;
+//    high[0] = 91;
+//    high[1] = 56;
+//    high[2] = 32;
 
     Mat mask;
     inRange(hsv, Scalar(low[0], low[1], low[2]), Scalar(high[0], high[1], high[2]), mask);
@@ -476,11 +496,11 @@ void MainWindow::on_btn_detect_clicked()
         area.convertTo(bgr, CV_32FC3, 1.0 / 255, 0);
         cvtColor(bgr, hsv, CV_BGR2Lab);
 
-        float LAB[500][3];
-        float sub[500][2];
-        float cross[500];
+        float LAB[1500][3];
+        float sub[1500][2];
+        float cross[1500];
 
-        //遍历图像
+        //遍历图像,zhe duan daima daozhi benkui
         for (int r = 0; r < hsv.rows; r++)
         {
             float l = 0, a = 0, b = 0;
@@ -492,9 +512,10 @@ void MainWindow::on_btn_detect_clicked()
                 b += vec3b[2];
             }
             //fout << l << " " << a << " " << b << endl;
-            strshow = QString::number(l) + " " + QString::number(a) + " " + QString::number(b) + "\n";
-            ui->textEdit->insertPlainText(strshow);
-            ui->textEdit->moveCursor(QTextCursor::End);
+//            strshow = QString::number(l) + " " + QString::number(a) + " " + QString::number(b) + "\n";
+//            ui->textEdit->insertPlainText(strshow);
+//            ui->textEdit->moveCursor(QTextCursor::End);
+            //zhe duan daima daozhi benkui
             LAB[r][0] = l;
             LAB[r][1] = a;
             LAB[r][2] = b;
@@ -544,7 +565,7 @@ void MainWindow::on_btn_detect_clicked()
                 rectangle(org,rect,Scalar(0, 0, 255), 2);   //RED
         }
 
-//        //save small area
+        //save small area
 //        Mat write = m_Picture(rect);
 //        QString filename = QTime::currentTime().toString()+QUuid::createUuid().toString() + ".bmp";
 //        imwrite(filename.toStdString(),write);

@@ -90,12 +90,28 @@ void TemplatePrepare::mouseClick(int event, int x, int y, int flags, void*)
         cvtColor(bgr, hsv, CV_BGR2Lab);
 
         Vec3d low, high;
+        //1
         low[0] = -8;
         low[1] = 35;
         low[2] = 28;
         high[0] = 91;
         high[1] = 65;
         high[2] = 58;
+
+        //2,3
+//        low[0] = -8;
+//        low[1] = 6;
+//        low[2] = -2;
+//        high[0] = 91;
+//        high[1] = 36;
+//        high[2] = 27;
+        //4
+//        low[0] = -8;
+//        low[1] = 26;
+//        low[2] = 2;
+//        high[0] = 91;
+//        high[1] = 56;
+//        high[2] = 32;
 
         Mat mask;
         inRange(hsv, Scalar(low[0], low[1], low[2]), Scalar(high[0], high[1], high[2]), mask);
@@ -162,8 +178,8 @@ void TemplatePrepare::mouseClick(int event, int x, int y, int flags, void*)
         Mat temp = Mat::zeros(gray_all.size(), CV_8UC3);
         drawContours(temp, contours_all, maxindex, CV_RGB(255, 0, 0), 1); //rng.uniform(0,255)  ，CV_FILLED
 
-//        namedWindow("temp");
-//        imshow("temp", temp);
+        namedWindow("temp");
+        imshow("temp", temp);
 
         //保存轮廓到文件
         fout.open("1.txt");
