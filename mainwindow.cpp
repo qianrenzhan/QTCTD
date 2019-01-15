@@ -5,20 +5,23 @@
 #include <QMessageBox>
 #include <QTime>
 #include <QUuid>
-
-#include "templateprepare.h"
+#include <QTimer>
 
 TemplatePrepare gcapp;
 
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
     winName = "image";
 
     scale = 1;
     m_IsTemplateReady = false;
+
+    x = 1;
+    y = 1;
+    width = 1;
+    height = 1;
+
 #if defined (Q_OS_WIN32)
     m_Picture = imread("D:\\temp\\QTCTD\\1.bmp", 1);
     vstr.append("D:\\temp\\QTCTD\\1.bmp");
@@ -30,27 +33,49 @@ MainWindow::MainWindow(QWidget *parent) :
     current_file = 0;
 #endif
 #if defined (Q_OS_LINUX)
-    m_Picture = imread("1.bmp", 1);
-    vstr.append("1.bmp");
-    vstr.append("3.bmp");
-    vstr.append("11.bmp");
-    vstr.append("12.bmp");
-    vstr.append("21.bmp");
-//    m_Picture = imread("1.jpg", 1);
-//    vstr.append("1.jpg");
-//    vstr.append("2.jpg");
-//    vstr.append("3.jpg");
-//    vstr.append("4.jpg");
-//    vstr.append("5.jpg");
+    m_Picture = imread("/home/qian/workspace/matlab/ctd1/2.bmp", 1);
+    QString path = "/home/qian/workspace/QTproject/QTCTD/pic/";
+    for(int i = 0;i<7;i++)
+    {
+        QString ii = QString::number(i+1);
+        for(int j = 0; j<4;j++)
+        {
+            QString jj = "a.bmp";
+            if(j == 0) jj = "a.bmp";
+            if(j == 1) jj = "b.bmp";
+            if(j == 2) jj = "c.bmp";
+            if(j == 3) jj = "d.bmp";
+            vstr.append(path+ii+jj);
+        }
+    }
     current_file = 0;
 #endif
     Mat show = m_Picture.clone();
     QImage image = MatToQImage(show);
     ui->label_picture->setPixmap(QPixmap::fromImage(image.scaled(ui->label_picture->size())));
 
+    //暂时注释掉
     connect(&gcapp,SIGNAL(template_ready_new()),this,SLOT(on_template_ready_new()));
 
     //on_btn_template_confirm_clicked();
+
+
+    QString pythonpath = "/home/qian/workspace/QTproject/QTCTD/python";
+    if (!pythonInit(pythonpath.toStdString().c_str()))
+        qDebug() << "python init failed" << endl;
+    pFunc[0] = pythonLoadModuleAndFunction("pythonsvmtest", "judge1");
+    pFunc[1] = pythonLoadModuleAndFunction("pythonsvmtest", "judge2");
+    pFunc[2] = pythonLoadModuleAndFunction("pythonsvmtest", "judge3");
+    pFunc[3] = pythonLoadModuleAndFunction("pythonsvmtest", "judge4");
+    pFunc[4] = pythonLoadModuleAndFunction("pythonsvmtest", "judge5");
+    pFunc[5] = pythonLoadModuleAndFunction("pythonsvmtest", "judge6");
+    pFunc[6] = pythonLoadModuleAndFunction("pythonsvmtest", "judge7");
+
+    qDebug() << "python function loaded" << endl;
+
+    timerAutoPlay = new QTimer();
+    timerAutoPlay->setInterval(2000);
+    connect(timerAutoPlay,SIGNAL(timeout()),this,SLOT(autoPlay()));
 }
 
 MainWindow::~MainWindow()
@@ -58,10 +83,66 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_template_ready_new()
+void MainWindow::autoPlay()
 {
+    on_btn_read_next_clicked();
+    on_btn_detect_clicked();
+}
+
+void MainWindow::updateMiniPic(QString number)
+{
+    QString currenttemplate = number;
+    //如果时-1，则从文件读取最新的，否则，显示对应的图
+    if(number.compare("-1") == 0)
+    {
+        ifstream in;
+        in.open("./template/1.txt"); //打开文件
+        if (!in.eof())
+        {
+            int current;
+            in >> current;
+            currenttemplate = QString::number(current);
+        }
+        in.close();//关闭文件
+    }
+
+    QString path = "./template/" + currenttemplate;
+    readTxt(path);
+
+    //在右上绘制截取后的图
+    QString picpath = path+"/1.bmp";
+    Rect rect(x/scale,y/scale,width/scale,height/scale);
+    Mat templatepic = imread(picpath.toStdString().c_str());
+    Mat roi = templatepic(rect);
+
+    QImage image = MatToQImage(roi);
+    ui->label_area->setPixmap(QPixmap::fromImage(image.scaled(ui->label_area->size(),Qt::KeepAspectRatio)));
+
+    //在roi上绘制轮廓，画到右下
+    cv::Size size(roi.size().width*scale,roi.size().height*scale);
+    Mat roicontour = Mat::zeros(size, CV_8UC3);
+    for (int controlnum = 0; controlnum < index2; controlnum++)
+    {
+        int x = object2[controlnum][0];
+        int y = object2[controlnum][1];
+        circle(roicontour, Point(x, y), 2, Scalar(0, 0, 255), -1);
+    }
+
+    for(int rectnum = 0; rectnum < vrect.size();rectnum++)
+    {
+        rectangle(roicontour,vrect[rectnum],Scalar(0, 255, 0), 2);
+    }
+
+    image = MatToQImage(roicontour);
+    ui->label_contour->setPixmap(QPixmap::fromImage(image.scaled(ui->label_contour->size(),Qt::KeepAspectRatio)));
+
+}
+
+void MainWindow::readTxt(QString path)
+{
+    QString path1 = path + "/1.txt";
     ifstream in;
-    in.open("1.txt"); //打开文件
+    in.open(path1.toStdString().c_str()); //打开文件
     index1 = 0;
     while (!in.eof())
     {
@@ -92,10 +173,11 @@ void MainWindow::on_template_ready_new()
     }
 
     //读取待检区域txt
-   in.open("2.txt");//打开文件
-   int x,y,width,height;
-   in >> x >> y >> width>> height;
-   vrect.clear();
+    QString path2 = path + "/2.txt";
+    in.open(path2.toStdString().c_str());//打开文件
+
+    in >> x >> y >> width>> height;
+    vrect.clear();
     while (!in.eof())
     {
         int x1,y1,width1,height1;
@@ -105,30 +187,11 @@ void MainWindow::on_template_ready_new()
     }
     vrect.pop_back();
     in.close();//关闭文件
+}
 
-    //在右上绘制截取后的图
-    Rect rect(x/scale,y/scale,width/scale,height/scale);
-    Mat roi = m_Picture(rect);
-    QImage image = MatToQImage(roi);
-    ui->label_area->setPixmap(QPixmap::fromImage(image.scaled(ui->label_area->size(),Qt::KeepAspectRatio)));
-
-    //在roi上绘制轮廓，画到右下
-    cv::Size size(roi.size().width*scale,roi.size().height*scale);
-    Mat roicontour = Mat::zeros(size, CV_8UC3);
-    for (int controlnum = 0; controlnum < index2; controlnum++)
-    {
-        int x = object2[controlnum][0];
-        int y = object2[controlnum][1];
-        circle(roicontour, Point(x, y), 2, Scalar(0, 0, 255), -1);
-    }
-
-    for(int rectnum = 0; rectnum < vrect.size();rectnum++)
-    {
-        rectangle(roicontour,vrect[rectnum],Scalar(0, 255, 0), 2);
-    }
-
-    image = MatToQImage(roicontour);
-    ui->label_contour->setPixmap(QPixmap::fromImage(image.scaled(ui->label_contour->size(),Qt::KeepAspectRatio)));
+void MainWindow::on_template_ready_new()
+{
+    updateMiniPic("-1");
 }
 
 QImage MainWindow::MatToQImage(cv::Mat& mat)
@@ -203,10 +266,16 @@ cv::Mat MainWindow::QImageToMat(QImage image)
 
 void MainWindow::on_btn_open_clicked()
 {
-    //打开摄像头
-    QMessageBox msgBox;
-    msgBox.setText("摄像头不存在!");
-    msgBox.exec();
+//    //打开摄像头
+//    QMessageBox msgBox;
+//    msgBox.setText("摄像头不存在!");
+//    msgBox.exec();
+
+    //开启自动播放
+    if(timerAutoPlay->isActive())
+        timerAutoPlay->stop();
+    else
+        timerAutoPlay->start();
 }
 
 void MainWindow::on_btn_read_clicked()
@@ -225,7 +294,7 @@ void MainWindow::on_btn_read_clicked()
 void MainWindow::on_btn_template_prepare_clicked()
 {
     cv::Size dsize = cv::Size(m_Picture.cols*scale, m_Picture.rows*scale);
-    org = cv::Mat(dsize, CV_32S);
+    //org = cv::Mat(dsize, CV_32S);
     cv::resize(m_Picture, org, dsize);
 
     cvNamedWindow(winName.c_str(), CV_WINDOW_AUTOSIZE);
@@ -247,7 +316,7 @@ void MainWindow::on_btn_template_confirm_clicked()
 
 void MainWindow::on_btn_detect_clicked()
 {
-    QString strshow;
+    //QString strshow;
     if(m_IsTemplateReady == false)
     {
         QMessageBox msgBox;
@@ -259,11 +328,10 @@ void MainWindow::on_btn_detect_clicked()
     //进行图像处理
     Size dsize = Size(m_Picture.cols*scale, m_Picture.rows*scale);
 
-    Mat org = Mat(dsize, CV_32S);
-    cv::resize(m_Picture, org, dsize);
+    cv::resize(m_Picture, m_Picture_org, dsize);
 
     Mat bgr, hsv, dst;
-    org.convertTo(bgr, CV_32FC3, 1.0 / 255, 0);
+    m_Picture_org.convertTo(bgr, CV_32FC3, 1.0 / 255, 0);
     cvtColor(bgr, hsv, CV_BGR2Lab);
 
     Vec3d low, high;
@@ -274,22 +342,6 @@ void MainWindow::on_btn_detect_clicked()
     high[0] = 91;
     high[1] = 65;
     high[2] = 58;
-
-    //2,3
-//    low[0] = -8;
-//    low[1] = 6;
-//    low[2] = -2;
-//    high[0] = 91;
-//    high[1] = 36;
-//    high[2] = 27;
-
-    //4
-//    low[0] = -8;
-//    low[1] = 26;
-//    low[2] = 2;
-//    high[0] = 91;
-//    high[1] = 56;
-//    high[2] = 32;
 
     Mat mask;
     inRange(hsv, Scalar(low[0], low[1], low[2]), Scalar(high[0], high[1], high[2]), mask);
@@ -306,7 +358,7 @@ void MainWindow::on_btn_detect_clicked()
             }
             else
             {
-                dst.at<Vec3f>(r, c) = ff;// bgr.at<Vec3f>(r, c);
+                dst.at<Vec3f>(r, c) = ff;
             }
         }
     }
@@ -363,95 +415,138 @@ void MainWindow::on_btn_detect_clicked()
         origin[index0++][2] = 0;
     }
 
-    for (int i = 0; i < index2; i++)   //控制点1初始化
-    {
-        controldata1[i][0] = object2[i][0];
-        controldata1[i][1] = object2[i][1];
-        controldata1[i][2] = object2[i][2];
-    }
+    // 读取文件，判断有多少个模板
+//    int templatecount;
+//    ifstream in;
+//    in.open("./template/1.txt"); //打开文件
+//    if (!in.eof())
+//        in >> templatecount;
+//    in.close();//关闭文件
 
-    //数据准备完毕，下面进行匹配及结果展示
+    QFile *tempFile = new QFile();
+    tempFile->setFileName("./template/1.txt");
+    if(!tempFile->open(QIODevice::ReadOnly|QIODevice::Text))
+        qDebug() << "file open failed" << endl;
+    QTextStream ts(tempFile);
+    QString str_get;
+    while(!ts.atEnd())
+        str_get = ts.readAll();
+    tempFile->close();
+    int templatecount = str_get.toInt();
 
-    //2.4 初始化
+
+    //需要判断那个模板匹配的最好
     float T[2] = { 0,0 };
     float E = 0;
     float last_E = 0;
     int iteration = 15;
-    float T_Intermediate[15][2];
-    for (int i = 0; i < 15; i++)
-        for (int j = 0; j < 2; j++)
-            T_Intermediate[i][j] = 0;
-    //float delta_Intermediate[15];
-    float e_Intermediate[15];
-    //int indexcontrol[100];   //index2
+    float T_Intermediate[50][2];
+    float e_Intermediate[50];
 
-    //2.5 迭代
-    int iter = 0;
-    for (iter = 0; iter < iteration; iter++)
+    int besttemplate = 0;
+    int bestiter = 0;
+    for(int count = 1; count <= templatecount; count++)
     {
-        //2.5.1 寻找控制点的对应点
-        for (int controlnum = 0; controlnum < index2; controlnum++)
+        QString path = "./template/" + QString::number(count);
+
+        readTxt(path);
+
+        //数据准备完毕，下面进行匹配及结果展示
+        //2.4 初始化
+        T[0] = 0; T[1] = 0;
+        E = 0;
+        last_E = 0;
+        for (int i = 0; i < 50; i++)
         {
-            int minidis = 100000;
-            int minindex = 0;
-            for (int originnum = 0; originnum < index0; originnum++)
+            e_Intermediate[i] = 0;
+            for (int j = 0; j < 2; j++)
+                T_Intermediate[i][j] = 0;
+        }
+
+        //2.5 迭代,需要判断那个模板匹配的最好
+        int iter = 0;
+        for (iter = 0; iter < iteration; iter++)
+        {
+            //2.5.1 寻找控制点的对应点
+            for (int controlnum = 0; controlnum < index2; controlnum++)
             {
-                //计算距离
-                int dis = sqrt((controldata1[controlnum][0] - origin[originnum][0])*(controldata1[controlnum][0] - origin[originnum][0])
-                    + (controldata1[controlnum][1] - origin[originnum][1])*(controldata1[controlnum][1] - origin[originnum][1]));
-                if (dis < minidis)
+                int minidis = 100000;
+                int minindex = 0;
+                for (int originnum = 0; originnum < index0; originnum++)
                 {
-                    minidis = dis;
-                    minindex = originnum;
+                    //计算距离
+                    int dis = sqrt((controldata1[controlnum][0] - origin[originnum][0])*(controldata1[controlnum][0] - origin[originnum][0])
+                        + (controldata1[controlnum][1] - origin[originnum][1])*(controldata1[controlnum][1] - origin[originnum][1]));
+                    if (dis < minidis)
+                    {
+                        minidis = dis;
+                        minindex = originnum;
+                    }
                 }
+                controldata2[controlnum][0] = origin[minindex][0];
+                controldata2[controlnum][1] = origin[minindex][1];
+                controldata2[controlnum][2] = origin[minindex][2];
             }
-            controldata2[controlnum][0] = origin[minindex][0];
-            controldata2[controlnum][1] = origin[minindex][1];
-            controldata2[controlnum][2] = origin[minindex][2];
-        }
-        //2.5.2 求解旋转和平移矩阵
-        //controldata1 controldata2 的中心
-        float x1sum = 0, y1sum = 0;
-        float x2sum = 0, y2sum = 0;
-        for (int i = 0; i < index2; i++)  //index2 控制点的数量
-        {
-            x1sum += controldata1[i][0];
-            y1sum += controldata1[i][1];
-            x2sum += controldata2[i][0];
-            y2sum += controldata2[i][1];
-        }
-        x1sum /= index2;
-        y1sum /= index2;
-        x2sum /= index2;
-        y2sum /= index2;
+            //2.5.2 求解旋转和平移矩阵
+            //controldata1 controldata2 的中心
+            float x1sum = 0, y1sum = 0;
+            float x2sum = 0, y2sum = 0;
+            for (int i = 0; i < index2; i++)  //index2 控制点的数量
+            {
+                x1sum += controldata1[i][0];
+                y1sum += controldata1[i][1];
+                x2sum += controldata2[i][0];
+                y2sum += controldata2[i][1];
+            }
+            x1sum /= index2;
+            y1sum /= index2;
+            x2sum /= index2;
+            y2sum /= index2;
 
-        T[0] = x2sum - x1sum;
-        T[1] = y2sum - y1sum;
-        T_Intermediate[iter][0] = T[0];
-        T_Intermediate[iter][1] = T[1];
+            T[0] = x2sum - x1sum;
+            T[1] = y2sum - y1sum;
+            T_Intermediate[iter][0] = T[0];
+            T_Intermediate[iter][1] = T[1];
 
-        //2.5.3 利用求解得到的RT计算变换之后的点
-        for (int controlnum = 0; controlnum < index2; controlnum++)
-        {
-            controldata1[controlnum][0] += T[0];
-            controldata1[controlnum][1] += T[1];
+            //2.5.3 利用求解得到的RT计算变换之后的点
+            for (int controlnum = 0; controlnum < index2; controlnum++)
+            {
+                controldata1[controlnum][0] += T[0];
+                controldata1[controlnum][1] += T[1];
+            }
+            //误差
+            float dissum = 0;
+            for (int controlnum = 0; controlnum < index2; controlnum++)
+            {
+                dissum += ((controldata1[controlnum][0] - controldata2[controlnum][0])*(controldata1[controlnum][0] - controldata2[controlnum][0])
+                    + (controldata1[controlnum][1] - controldata2[controlnum][1])*(controldata1[controlnum][1] - controldata2[controlnum][1]));
+            }
+            E = sqrt(dissum);
+            e_Intermediate[iter] = E / index2;
+            float delta = abs(E - last_E) / index2;
+//            if (delta < 0.001)
+//                break;
+            if(e_Intermediate[iter] < 1 && delta < 0.0001)
+                break;
+            last_E = E;
+            qDebug() << "iter:" << iter << endl;
+            qDebug() << e_Intermediate[iter] << endl;
         }
-        //误差
-        float dissum = 0;
-        for (int controlnum = 0; controlnum < index2; controlnum++)
+        if(iter < iteration)
         {
-            dissum += ((controldata1[controlnum][0] - controldata2[controlnum][0])*(controldata1[controlnum][0] - controldata2[controlnum][0])
-                + (controldata1[controlnum][1] - controldata2[controlnum][1])*(controldata1[controlnum][1] - controldata2[controlnum][1]));
-        }
-        E = sqrt(dissum);
-        e_Intermediate[iter] = E / index2;
-        float delta = abs(E - last_E) / index2;
-        if (delta < 0.001)
+            //记录当前模板
+            besttemplate = count;
+            bestiter = iter;
+            qDebug() << "besttemplate:" << besttemplate << endl;
+            qDebug() << "bestiter:" << bestiter << endl;
             break;
-        last_E = E;
-        //cout << "迭代了" << iter << "代" << endl;
-        cout << e_Intermediate[iter] << endl;
+        }
     }
+
+    //更新右边两个小图
+    if(besttemplate == 0)
+        return;
+    updateMiniPic(QString::number(besttemplate));
 
     //2.6 计算最终的R和T
 //    cout << "计算最终的R和T:" << endl;
@@ -460,13 +555,13 @@ void MainWindow::on_btn_detect_clicked()
 //    ui->textEdit->moveCursor(QTextCursor::End);
 
     float temp_T[2] = {0,0};
-    for (int i = 0; i < iter; i++)
+    for (int i = 0; i < bestiter; i++)
     {
         temp_T[0] += T_Intermediate[i][0];
         temp_T[1] += T_Intermediate[i][1];
     }
+    qDebug() << "x:" << temp_T[0] << ",y:" << temp_T[1] << endl;
 
-//    cout << temp_T[0] << " " << temp_T[1] << endl;
 //    temp_T[0] -=2;
 //    temp_T[1] -=2;
 //    strshow = QString::number(temp_T[0]) + " " + QString::number(temp_T[1]) + "\n";
@@ -480,98 +575,33 @@ void MainWindow::on_btn_detect_clicked()
         int y1 = object2[controlnum][1] + temp_T[1];
         int x2 = object2[controlnum+1][0] + temp_T[0];
         int y2 = object2[controlnum+1][1] + temp_T[1];
-        circle(org, Point(x1, y1), 4, Scalar(255, 255, 255), -1);
+        circle(m_Picture_org, Point(x1, y1), 4, Scalar(255, 255, 255), -1);
         if(x2-x1<5)
-            line(org,Point(x1,y1),Point(x2,y2),Scalar(0,0,0),2);
+            line(m_Picture_org,Point(x1,y1),Point(x2,y2),Scalar(0,0,0),2);
     }
 
-    for(int rectnum = 0; rectnum < vrect.size();rectnum++)
+    for(int rectnum = 0; rectnum < vrect.size(); rectnum++)
     {
         int x = vrect[rectnum].x + temp_T[0];
         int y = vrect[rectnum].y + temp_T[1];
-        Rect rect(x,y,vrect[rectnum].width,vrect[rectnum].height);
-        //rectangle(org,rect,Scalar(0, 255, 0), 2);
-        //Mat org = m_Picture(rect);
+        Rect rect(x, y, vrect[rectnum].width, vrect[rectnum].height);
 
-        Mat bgr, hsv;
         Mat temparea = m_Picture(rect);
 
-        float scale = 5;
-        Size dsize = Size(temparea.cols*scale, temparea.rows*scale);
-        Mat area = Mat(dsize, CV_32S);
-        cv::resize(temparea, area, dsize);
+        int res1 = 0;
+        res1 = pythonCallFunction(pFunc[besttemplate-1], MatToArray(temparea));
+//        if(besttemplate == 1)
+//            res1 = pythonCallFunction(pFunc1, MatToArray(temparea));
+//        else if(besttemplate == 2)
+//            res1 = pythonCallFunction(pFunc2, MatToArray(temparea));
+//        else if(besttemplate == 3)
+//            res1 = pythonCallFunction(pFunc3, MatToArray(temparea));
+        qDebug() << "res1:" << res1 << endl;
 
-        area.convertTo(bgr, CV_32FC3, 1.0 / 255, 0);
-        cvtColor(bgr, hsv, CV_BGR2Lab);
-
-        float LAB[1500][3];
-        float sub[1500][2];
-        float cross[1500];
-
-        //遍历图像,zhe duan daima daozhi benkui
-        for (int r = 0; r < hsv.rows; r++)
-        {
-            float l = 0, a = 0, b = 0;
-            for (int c = hsv.cols / 2 - 2; c < hsv.cols / 2 + 2; c++)
-            {
-                Vec3f vec3b = hsv.at<Vec3f>(r, c);
-                l += vec3b[0];
-                a += vec3b[1];
-                b += vec3b[2];
-            }
-            //fout << l << " " << a << " " << b << endl;
-//            strshow = QString::number(l) + " " + QString::number(a) + " " + QString::number(b) + "\n";
-//            ui->textEdit->insertPlainText(strshow);
-//            ui->textEdit->moveCursor(QTextCursor::End);
-
-            LAB[r][0] = l;
-            LAB[r][1] = a;
-            LAB[r][2] = b;
-        }
-
-        //找到L通道的最小值
-        int mindata = 10000;
-        int minindex = 0;
-        for (int i = 0; i < hsv.rows; i++)
-        {
-            if (LAB[i][0] < mindata)
-            {
-                mindata = LAB[i][0];
-                minindex = i;
-            }
-        }
-
-
-        if (minindex > 275 && mindata < 150)    //如果有黑色的卡槽区域
-        {
-            rectangle(org,rect,Scalar(0, 255, 0), 2);    //GREEN
-            //cout << files[i].c_str() << ":1" << endl;
-        }
+        if(res1 == 1)
+            rectangle(m_Picture_org,rect,Scalar(0, 255, 0), 2);   //GREEN
         else
-        {
-            for (int i = 10; i < hsv.rows; i++)
-            {
-                sub[i][0] = LAB[i][1] - LAB[i-10][1];
-                sub[i][1] = LAB[i][2] - LAB[i - 10][2];
-                cross[i] = sub[i][0] * sub[i][1];
-            }
-
-            //找cross[1:100]中最大值
-            int maxdata = 0;
-            int maxindex = 0;
-            for (int i = 10; i < 100; i++)
-            {
-                if (cross[i] > maxdata)
-                {
-                    maxdata = cross[i];
-                    maxindex = i;
-                }
-            }
-            if(maxdata > 200)
-                rectangle(org,rect,Scalar(0, 255, 0), 2);   //GREEN
-            else
-                rectangle(org,rect,Scalar(0, 0, 255), 2);   //RED
-        }
+            rectangle(m_Picture_org,rect,Scalar(0, 0, 255), 2);   //RED
 
         //save small area
 //        Mat write = m_Picture(rect);
@@ -579,7 +609,8 @@ void MainWindow::on_btn_detect_clicked()
 //        imwrite(filename.toStdString(),write);
     }
 
-    QImage image = MatToQImage(org);
+    qDebug() << m_Picture_org.cols << " " << m_Picture_org.rows << endl;
+    QImage image = MatToQImage(m_Picture_org);
     ui->label_picture->setPixmap(QPixmap::fromImage(image.scaled(ui->label_picture->size())));
 
 }

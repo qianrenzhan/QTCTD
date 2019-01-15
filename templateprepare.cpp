@@ -105,6 +105,7 @@ void TemplatePrepare::mouseClick(int event, int x, int y, int flags, void*)
 //        high[0] = 91;
 //        high[1] = 36;
 //        high[2] = 27;
+
         //4
 //        low[0] = -8;
 //        low[1] = 26;
@@ -181,6 +182,15 @@ void TemplatePrepare::mouseClick(int event, int x, int y, int flags, void*)
         namedWindow("temp");
         imshow("temp", temp);
 
+        QString dir_str = fileOperation();
+
+        //临时保存程序当前路径
+        QDir tempDir;
+        QString currentDir = tempDir.currentPath();
+
+        tempDir.setCurrent(dir_str);
+
+        imwrite("1.bmp", originimage);
         //保存轮廓到文件
         fout.open("1.txt");
         for (int i = 0; i < contours_all[maxindex].size(); i+= 20)
@@ -199,6 +209,9 @@ void TemplatePrepare::mouseClick(int event, int x, int y, int flags, void*)
             fout << vrectobject[i].height << endl;
         }
         fout.close();
+
+        //前后呼应
+        tempDir.setCurrent(currentDir);
 
         destroyWindow(*winName);
 
@@ -228,4 +241,102 @@ void TemplatePrepare::mouseClick(int event, int x, int y, int flags, void*)
         }
         break;
     }
+}
+
+
+QString TemplatePrepare::fileOperation()
+{
+    //1.判断模板文件夹是否存在，没有就新建
+    QString dir_template = "./template";
+    QDir dir;
+    if (!dir.exists(dir_template))
+    {
+        bool res = dir.mkpath(dir_template);
+        qDebug() << "mkdir:" << res;
+    }
+
+    //2.判断模板数量文件是否存在，没有就新建，并在其中写0.
+    //
+    //临时保存程序当前路径
+    QDir tempDir;
+    QString currentDir = tempDir.currentPath();
+
+    tempDir.setCurrent(dir_template);
+
+    QString fileName = "1.txt";
+    QString templatecount = "1";   //当前模板数量
+    QFile *tempFile = new QFile();
+    tempFile->setFileName(fileName);
+    //检查filePath路径下是否存在文件fileName,如果停止操作。
+
+    if(tempFile->exists(fileName))
+    {
+        qDebug()<<"file is exist";
+
+        if(!tempFile->open(QIODevice::ReadOnly|QIODevice::Text))
+        {
+            qDebug() << "file open failed" << endl;
+        }
+
+        //读取文件
+        QTextStream ts(tempFile);
+        //获取文件中的数据
+        QString str_get;
+
+        //循环文档数据至结尾
+        while(!ts.atEnd())
+        {
+            //将全部数据绑定str_get
+            str_get = ts.readAll();
+        }
+        //关闭文档
+        tempFile->close();
+
+        qDebug() << str_get << endl;
+
+        //加一,写入
+        int current = str_get.toInt();
+        current++;
+        templatecount = QString::number(current);
+
+        if(!tempFile->open(QIODevice::ReadWrite | QIODevice::Text))
+        {
+            qDebug()<<"open failed" << endl;
+        }
+        else
+        {
+            //写入内容,这里需要转码，否则报错。
+            QByteArray strb = templatecount.toUtf8();
+            //写入QByteArray格式字符串
+            tempFile->write(strb);
+            tempFile->close();
+        }
+    }
+    else
+    {
+        //此时，路径下没有fileName文件，使用下面代码在当前路径下创建文件
+        if(!tempFile->open(QIODevice::WriteOnly|QIODevice::Text))
+        {
+            qDebug()<<"打开失败";
+        }
+        else
+        {
+            templatecount= "1";
+            QByteArray str = templatecount.toUtf8();
+            tempFile->write(str);
+        }
+    }
+    tempFile->close();
+
+    //新建模板文件夹
+    if (!dir.exists(templatecount))
+    {
+        bool res = dir.mkpath(templatecount);
+        qDebug() << "mkdir:" << res;
+    }
+
+    //将程序当前路径设置为原来的路径
+    tempDir.setCurrent(currentDir);
+
+    return "./" + dir_template + "/" + templatecount;
 }

@@ -6,6 +6,9 @@
 #include <fstream>
 #include <string>
 
+#include "templateprepare.h"
+#include "function.h"
+
 using namespace std;
 using namespace cv;
 
@@ -22,7 +25,8 @@ public:
     ~MainWindow();
     Mat QImageToMat(QImage image);
     QImage MatToQImage(cv::Mat& mat);
-
+    void updateMiniPic(QString number);
+    void readTxt(QString path);
     static void onMouse(int event, int x, int y, int flags, void *param);
 
 private slots:
@@ -40,19 +44,23 @@ private slots:
     
     void on_btn_read_next_clicked();
 
+    void autoPlay();
+
 private:
     Ui::MainWindow *ui;
 
     Mat m_Picture;
+    Mat m_Picture_org;
     Mat m_TemplateArea;
     Mat m_TemplateContour;
 
     //和目标制备有关
-    cv::Mat org;
+    Mat org;
     string winName;
     float scale;
     bool m_IsTemplateReady;
 
+    int x,y,width,height;
     //原始轮廓
     int origin[2000][3];
     int controldata2[2000][3];
@@ -71,6 +79,15 @@ private:
     //filelist
     QVector<QString> vstr;
     int current_file;
+
+    //Python
+//    PyObject *pFunc1;
+//    PyObject *pFunc2;
+//    PyObject *pFunc3;
+    PyObject *pFunc[7];
+
+    //自动播放
+    QTimer *timerAutoPlay;
 
 };
 

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1441</width>
-    <height>723</height>
+    <height>604</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,9 +18,9 @@
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>600</y>
+      <y>610</y>
       <width>961</width>
-      <height>121</height>
+      <height>16</height>
      </rect>
     </property>
    </widget>
@@ -165,7 +165,7 @@ background-color: rgb(255, 255, 127);</string>
         </font>
        </property>
        <property name="text">
-        <string>打开/关闭</string>
+        <string>自动播放</string>
        </property>
       </widget>
      </item>
@@ -237,8 +237,15 @@ background-color: rgb(255, 255, 127);</string>
       <x>970</x>
       <y>550</y>
       <width>461</width>
-      <height>171</height>
+      <height>51</height>
      </rect>
+    </property>
+    <property name="html">
+     <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:20pt; color:#73d216;&quot;&gt;正在检测...&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
   </widget>

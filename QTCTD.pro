@@ -26,11 +26,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    templateprepare.cpp
+    templateprepare.cpp \
+    function.cpp
 
 HEADERS += \
         mainwindow.h \
-    templateprepare.h
+    templateprepare.h \
+    function.h
 
 FORMS += \
         mainwindow.ui
@@ -60,22 +62,25 @@ INCLUDEPATH += $$quote(D:\Program Files\Daheng Imavision\MER-Series\Samples\VC S
 LIBS += $$quote(D:\Program Files\Daheng Imavision\MER-Series\Samples\VC SDK\lib\x64\*.lib)
 }
 linux{
-QMAKE_DEFAULT_INCDIRS = ...
+    QMAKE_DEFAULT_INCDIRS = ...
 
-INCLUDEPATH += /usr/local/include \
-    /usr/include/opencv \
-    /usr/include/opencv2
+    INCLUDEPATH += /usr/local/include \
+        /usr/include/opencv \
+        /usr/include/opencv2
 
-INCLUDEPATH+=/usr/include
+    INCLUDEPATH+=/usr/include   \
+        /usr/include/python3.6m \
+        /home/qian/.local/lib/python3.6/site-packages/numpy/core/include/
 
 
-if(contains(DEFINES,ARM)){
-    message("compile for arm linux")
-    LIBS += /usr/lib/aarch64-linux-gnu/libmysqlclient.so
-    LIBS += /usr/lib/libopencv_*.so.3.3
-}else{
-    message("compile for amd linux")
-    LIBS += /usr/lib/x86_64-linux-gnu/libmysqlclient.so
-    LIBS += /usr/lib/x86_64-linux-gnu/libopencv_*.so.3.2
-}
+    if(contains(DEFINES,ARM)){
+        message("compile for arm linux")
+        LIBS += /usr/lib/aarch64-linux-gnu/libmysqlclient.so
+        LIBS += /usr/lib/libopencv_*.so.3.3
+    }else{
+        message("compile for amd linux")
+        LIBS += /usr/lib/x86_64-linux-gnu/libmysqlclient.so
+        LIBS += /usr/lib/x86_64-linux-gnu/libopencv_*.so.3.2
+        LIBS += /usr/lib/python3.6/config-3.6m-x86_64-linux-gnu/libpython3.6.so
+    }
 }

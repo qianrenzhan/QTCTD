@@ -2,6 +2,9 @@
 #define TEMPLATEPREPARE_H
 
 #include <QObject>
+#include <QDir>
+#include <QDebug>
+
 #include<opencv2/opencv.hpp>
 
 //#include <windows.h>
@@ -36,6 +39,7 @@ public:
     void setImageAndWinName(const Mat& _image, const string& _winName);
     void showImage(bool update);
     void mouseClick(int event, int x, int y, int flags, void* param);
+    QString fileOperation();
 
 signals:
     void template_ready_new();
