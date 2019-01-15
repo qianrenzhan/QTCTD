@@ -43,16 +43,23 @@ message("compile for windows")
 QMAKE_CXXFLAGS += /MP
 
 # opencv
-INCLUDEPATH+= D:\OpenCV\vs2015-64build-opencv3.3\install\include
+INCLUDEPATH+= D:\OpenCV\vs2015-64build-opencv3.3\install\include    \
+                D:\Python\Lib\site-packages\numpy\core\include  \
+                D:\Python\include
 
 CONFIG(debug, debug|release) {
 message("debug")
 #LIBS  +=  D:\OpenCV\vs2017-64build\install\lib\opencv_*2410d.lib
 LIBS += D:\OpenCV\vs2015-64build-opencv3.3\install\x64\vc14\lib\opencv_*330d.lib
+LIBS += D:\Python\libs\python36_d.lib   \
+        D:\Python\libs\python3_d.lib    \
+        D:\Python\libs\_tkinter.lib
 } else {
 message("release")
 #LIBS  +=  D:\OpenCV\vs2017-64build\install\lib\opencv_*2410.lib
-D:\OpenCV\vs2015-64build-opencv3.3\install\x64\vc14\lib\opencv_*330.lib
+LIBS += D:\OpenCV\vs2015-64build-opencv3.3\install\x64\vc14\lib\opencv_*330.lib
+LIBS += D:\Python\libs\python36.lib \
+        D:\Python\libs\python3.lib
 }
 
 

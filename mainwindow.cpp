@@ -23,17 +23,25 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     height = 1;
 
 #if defined (Q_OS_WIN32)
-    m_Picture = imread("D:\\temp\\QTCTD\\1.bmp", 1);
-    vstr.append("D:\\temp\\QTCTD\\1.bmp");
-    vstr.append("D:\\temp\\QTCTD\\3.bmp");
-    vstr.append("D:\\temp\\QTCTD\\11.bmp");
-    vstr.append("D:\\temp\\QTCTD\\21.bmp");
-    vstr.append("D:\\temp\\QTCTD\\31.bmp");
-    vstr.append("D:\\temp\\QTCTD\\34.bmp");
+    m_Picture = imread("E:\\3.workspace\\QTCTD\\pic\\1a.bmp", 1);
+    QString path = "E:\\3.workspace\\QTCTD\\pic\\";
+    for(int i = 0;i<7;i++)
+    {
+        QString ii = QString::number(i+1);
+        for(int j = 0; j<4;j++)
+        {
+            QString jj = "a.bmp";
+            if(j == 0) jj = "a.bmp";
+            if(j == 1) jj = "b.bmp";
+            if(j == 2) jj = "c.bmp";
+            if(j == 3) jj = "d.bmp";
+            vstr.append(path+ii+jj);
+        }
+    }
     current_file = 0;
 #endif
 #if defined (Q_OS_LINUX)
-    m_Picture = imread("/home/qian/workspace/matlab/ctd1/2.bmp", 1);
+    m_Picture = imread("/home/qian/workspace/QTproject/QTCTD/pic/1a.bmp", 1);
     QString path = "/home/qian/workspace/QTproject/QTCTD/pic/";
     for(int i = 0;i<7;i++)
     {
