@@ -48,10 +48,10 @@ def judge7(img):
     svm_para_path = ''
     svm_model_path = ''
 
-    if(sysstr =="Windows"):
+    if (sysstr == "Windows"):
         svm_para_path = 'E:/3.workspace/QTCTD/python/CTD77/pca_para.pkl'
         svm_model_path = 'E:/3.workspace/QTCTD/python/CTD77/svm.model'
-    elif(sysstr == "Linux"):
+    elif (sysstr == "Linux"):
         svm_para_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD77/pca_para.pkl'
         svm_model_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD77/svm.model'
 
@@ -59,8 +59,6 @@ def judge7(img):
         V = pickle.load(f)
         m = pickle.load(f)
     features = np.array([np.dot(V, f - m) for f in features])
-
-
 
     m = svm_load_model(svm_model_path)
 
@@ -82,10 +80,10 @@ def judge6(img):
     svm_para_path = ''
     svm_model_path = ''
 
-    if(sysstr =="Windows"):
+    if (sysstr == "Windows"):
         svm_para_path = 'E:/3.workspace/QTCTD/python/CTD66/pca_para.pkl'
         svm_model_path = 'E:/3.workspace/QTCTD/python/CTD66/svm.model'
-    elif(sysstr == "Linux"):
+    elif (sysstr == "Linux"):
         svm_para_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD66/pca_para.pkl'
         svm_model_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD66/svm.model'
 
@@ -93,7 +91,6 @@ def judge6(img):
         V = pickle.load(f)
         m = pickle.load(f)
     features = np.array([np.dot(V, f - m) for f in features])
-
 
     m = svm_load_model(svm_model_path)
 
@@ -114,10 +111,10 @@ def judge5(img):
     svm_para_path = ''
     svm_model_path = ''
 
-    if(sysstr =="Windows"):
+    if (sysstr == "Windows"):
         svm_para_path = 'E:/3.workspace/QTCTD/python/CTD55/pca_para.pkl'
         svm_model_path = 'E:/3.workspace/QTCTD/python/CTD55/svm.model'
-    elif(sysstr == "Linux"):
+    elif (sysstr == "Linux"):
         svm_para_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD55/pca_para.pkl'
         svm_model_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD55/svm.model'
 
@@ -146,10 +143,10 @@ def judge4(img):
     svm_para_path = ''
     svm_model_path = ''
 
-    if(sysstr =="Windows"):
+    if (sysstr == "Windows"):
         svm_para_path = 'E:/3.workspace/QTCTD/python/CTD44/pca_para.pkl'
         svm_model_path = 'E:/3.workspace/QTCTD/python/CTD44/svm.model'
-    elif(sysstr == "Linux"):
+    elif (sysstr == "Linux"):
         svm_para_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD44/pca_para.pkl'
         svm_model_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD44/svm.model'
 
@@ -157,7 +154,6 @@ def judge4(img):
         V = pickle.load(f)
         m = pickle.load(f)
     features = np.array([np.dot(V, f - m) for f in features])
-
 
     m = svm_load_model(svm_model_path)
 
@@ -179,10 +175,10 @@ def judge3(img):
     svm_para_path = ''
     svm_model_path = ''
 
-    if(sysstr =="Windows"):
+    if (sysstr == "Windows"):
         svm_para_path = 'E:/3.workspace/QTCTD/python/CTD33/pca_para.pkl'
         svm_model_path = 'E:/3.workspace/QTCTD/python/CTD33/svm.model'
-    elif(sysstr == "Linux"):
+    elif (sysstr == "Linux"):
         svm_para_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD33/pca_para.pkl'
         svm_model_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD33/svm.model'
 
@@ -190,7 +186,6 @@ def judge3(img):
         V = pickle.load(f)
         m = pickle.load(f)
     features = np.array([np.dot(V, f - m) for f in features])
-
 
     m = svm_load_model(svm_model_path)
 
@@ -212,10 +207,10 @@ def judge2(img):
     svm_para_path = ''
     svm_model_path = ''
 
-    if(sysstr =="Windows"):
+    if (sysstr == "Windows"):
         svm_para_path = 'E:/3.workspace/QTCTD/python/CTD22/pca_para.pkl'
         svm_model_path = 'E:/3.workspace/QTCTD/python/CTD22/svm.model'
-    elif(sysstr == "Linux"):
+    elif (sysstr == "Linux"):
         svm_para_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD22/pca_para.pkl'
         svm_model_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD22/svm.model'
 
@@ -223,7 +218,6 @@ def judge2(img):
         V = pickle.load(f)
         m = pickle.load(f)
     features = np.array([np.dot(V, f - m) for f in features])
-
 
     m = svm_load_model(svm_model_path)
 
@@ -245,10 +239,10 @@ def judge1(img):
     svm_para_path = ''
     svm_model_path = ''
 
-    if(sysstr =="Windows"):
+    if (sysstr == "Windows"):
         svm_para_path = 'E:/3.workspace/QTCTD/python/CTD11/pca_para.pkl'
         svm_model_path = 'E:/3.workspace/QTCTD/python/CTD11/svm.model'
-    elif(sysstr == "Linux"):
+    elif (sysstr == "Linux"):
         svm_para_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD11/pca_para.pkl'
         svm_model_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD11/svm.model'
 
@@ -256,7 +250,6 @@ def judge1(img):
         V = pickle.load(f)
         m = pickle.load(f)
     features = np.array([np.dot(V, f - m) for f in features])
-
 
     m = svm_load_model(svm_model_path)
 
@@ -272,13 +265,13 @@ def test():
     print("start...")
     test_path_list = []
     sysstr = platform.system()
-    if(sysstr =="Windows"):
+    if (sysstr == "Windows"):
         test_path_list = [
             'E:/3.workspace/QTCTD/python/CTD11/test',
             'E:/3.workspace/QTCTD/python/CTD11/test',
             'E:/3.workspace/QTCTD/python/CTD11/test'
         ]
-    elif(sysstr == "Linux"):
+    elif (sysstr == "Linux"):
         test_path_list = [
             '/home/qian/workspace/QTproject/QTCTD/python/CTD11/test',
             '/home/qian/workspace/QTproject/QTCTD/python/CTD11/test',
@@ -293,13 +286,12 @@ def test():
     svm_para_path = ''
     svm_model_path = ''
 
-    if(sysstr =="Windows"):
+    if (sysstr == "Windows"):
         svm_para_path = 'E:/3.workspace/QTCTD/python/CTD11/pca_para.pkl'
         svm_model_path = 'E:/3.workspace/QTCTD/python/CTD11/svm.model'
-    elif(sysstr == "Linux"):
+    elif (sysstr == "Linux"):
         svm_para_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD11/pca_para.pkl'
         svm_model_path = '/home/qian/workspace/QTproject/QTCTD/python/CTD11/svm.model'
-
 
     with open(svm_para_path, 'rb') as f:
         V = pickle.load(f)
